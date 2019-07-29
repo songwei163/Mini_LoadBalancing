@@ -14,3 +14,5 @@ add_executable(tinyxml_test tinyxml/src/main.cc
         tinyxml/src/tinyxmlerror.cpp tinyxml/src/tinyxmlparser.cpp
         )
 
+add_executable(IO_test_cli IO/cli.cc IO/common.h)
+add_executable(IO_epoll_test_ser IO/epoll.cc IO/common.h)

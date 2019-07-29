@@ -9,5 +9,5 @@ int main ()
 {
   int a = 1;
 
-  log (LOG_INFO, __FILE__, __LINE__, "hello %d");
+  log (LOG_INFO, __FILE__, __LINE__, "hello");
 }
