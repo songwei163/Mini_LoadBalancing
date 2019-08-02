@@ -2,7 +2,7 @@
 <project version="4">
   <component name="PublishConfigData">
     <serverData>
-      <paths name="Remote Host (ae7f73e7-16c2-457f-88d8-2ba7b57d53e0)">
+      <paths name="Remote Host (5314405b-857d-4dc6-8491-90bde25cd5a8)">
         <serverdata>
           <mappings>
             <mapping deploy="/home/s/my_work_space/Mini_LoadBalancing" local="$PROJECT_DIR$" />
@@ -10,6 +10,7 @@
           <excludedPaths>
             <excludedPath local="true" path="$PROJECT_DIR$/cmake-build-debug" />
             <excludedPath local="true" path="$PROJECT_DIR$/cmake-build-debug" />
+            <excludedPath local="true" path="$PROJECT_DIR$/src/cmake-build-debug" />
           </excludedPaths>
         </serverdata>
       </paths>
