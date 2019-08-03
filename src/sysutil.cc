@@ -59,42 +59,6 @@ void ParseCmdArg (int argc, char *argv[], char *cfgFlie)
 
 /**
  *
- * @param fileName
- * @param buf
- * @return
- */
-int LoadCfgFile (const char *fileName, char *buf)
-{
-  if (*fileName == '\0')
-    {
-      return -1;
-    }
-
-  int cfgFd;
-  if ((cfgFd = open (fileName, O_RDONLY)) < 0)
-    {
-      return -1;
-    }
-
-  struct stat statBuf;
-  if (fstat (cfgFd, &statBuf) == -1)
-    {
-      return -1;
-    }
-
-  size_t fileLen = statBuf.st_size;
-  buf = new char[fileLen + 1];
-
-  if (read (cfgFd, buf, fileLen) < 0)
-    {
-      return -1;
-    }
-  close (cfgFd);
-  return true;
-}
-
-/**
- *
  * @param filename
  * @param buf
  * @return

@@ -50,8 +50,11 @@ int main (int argc, char *argv[])
 
   if (pool)
     {
-      cout << "a" << endl;
+      pool->run (logical_srv);
+      delete pool;
     }
+
+  close (listenFd);
   return 0;
 
 }

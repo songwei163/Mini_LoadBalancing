@@ -6,6 +6,7 @@
 #define _CONN_H_
 
 #include "common.h"
+#include "fdwrapper.h"
 
 class conn {
  public:
@@ -15,15 +16,15 @@ class conn {
   void reset();
  public:
   static const int BUF_SIZE = 2048;
-  //
+
   char *mCliBuf;
-  int *mCliReadIdx;
+  int mCliReadIdx;
   int mCliWriteIdx;
   struct sockaddr_in mCliAddr;
   int mCliFd;
-  //
+
   char *mSerBuf;
-  int *mSerReadIdx;
+  int mSerReadIdx;
   int mSerWriteIdx;
   struct sockaddr_in mSerAddr;
   int mSerFd;

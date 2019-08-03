@@ -7,6 +7,7 @@
 
 #include "common.h"
 #include "conn.h"
+#include "fdwrapper.h"
 
 class host {
  public:

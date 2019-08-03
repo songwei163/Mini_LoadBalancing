@@ -4,6 +4,7 @@
 
 #include "conn.h"
 
+
 conn::~conn ()
 {
   delete[]mCliBuf;
@@ -30,9 +31,8 @@ void conn::reset ()
 
   mSerReadIdx = 0;
   mSerWriteIdx = 0;
-  mSerFd = -1;
 
   mSerClosed = false;
-  memset (mCliBuf, 0, BUF_SIZE);
-  memset (mSerBuf, 0, BUF_SIZE);
+  memset (mCliBuf, '\0', BUF_SIZE);
+  memset (mSerBuf, '\0', BUF_SIZE);
 }

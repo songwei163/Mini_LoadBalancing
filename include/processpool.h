@@ -10,12 +10,12 @@
 
 class process {
  public:
-  process () : m_pid (-1)
+  process () : mPid (-1)
   {}
  public:
-  int m_busy_ratio;
-  pid_t m_pid;
-  int m_pipefd[2];
+  int mBusyRatio;
+  pid_t mPid;
+  int mPipeFd[2];
 };
 
 //               conn     host    mgr
@@ -57,6 +57,9 @@ class processPool {
 template<typename C, typename H, typename M>
 processPool<C, H, M> *processPool<C, H, M>::mInstance = nullptr;
 
+static int EPOLL_WAIT_TIME = 5000;
+static int sig_pipefd[2];
+
 template<typename C, typename H, typename M>
 processPool<C, H, M>::processPool (int listenFd, int ProcessNum) :
     mListenFd (listenFd), mProcessNum (ProcessNum), mIdx (-1), mStop (false)
@@ -67,20 +70,20 @@ processPool<C, H, M>::processPool (int listenFd, int ProcessNum) :
 
   for (int i = 0; i < ProcessNum; ++i)
     {
-      int ret = sockpair (PF_UNIX, SOCK_STREAM, 0, mSubProcess[i].m_pipefd);
+      int ret = socketpair (PF_UNIX, SOCK_STREAM, 0, mSubProcess[i].mPipeFd);
       assert (ret == 0);
 
-      mSubProcess[i].m_pid = fork ();
-      assert (mSubProcess[i].m_pid >= 0);
-      if (mSubProcess[i].m_pid > 0)
+      mSubProcess[i].mPid = fork ();
+      assert (mSubProcess[i].mPid >= 0);
+      if (mSubProcess[i].mPid > 0)
         {
-          close (mSubProcess[i].m_pipefd[1]);
-          mSubProcess[i].m_busy_ratio = 0;
+          close (mSubProcess[i].mPipeFd[1]);
+          mSubProcess[i].mBusyRatio = 0;
           continue;
         }
       else
         {
-          close (mSubProcess[i].m_pipefd[0]);
+          close (mSubProcess[i].mPipeFd[0]);
           mIdx = i;
           break;
         }
@@ -95,13 +98,38 @@ void processPool<C, H, M>::run (const vector<H> &arg)
       runChild (arg);
       return;
     }
-    runParent ();
+  runParent ();
 }
 
 template<typename C, typename H, typename M>
 void processPool<C, H, M>::runChild (const vector<H> &arg)
 {
-  cout << "child process: OK" << endl;
+  int pipeReadFd = mSubProcess[mIdx].mPipeFd[1];
+  add_read_fd (mEpollFd, pipeReadFd);
+
+  epoll_event events[MAX_EVENT_NUMBER];
+
+  M *mangaer = new M (mEpollFd, arg[mIdx]);
+  assert (mangaer);
+
+  int number = 0;
+  int ret = -1;
+
+  while (!mStop)
+    {
+      number = epoll_wait (mEpollFd, events, MAX_EVENT_NUMBER, EPOLL_WAIT_TIME);
+      if ((number < 0) && (errno != EINTR))
+        {
+          LOG_ERROR ("%s", "epoll failure");
+          break;
+        }
+
+      if (number == 0)
+        {
+            mangaer->recycle_conns();
+        }
+
+    }
 }
 
 template<typename C, typename H, typename M>
