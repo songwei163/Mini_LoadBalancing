@@ -57,6 +57,12 @@ void ParseCmdArg (int argc, char *argv[], char *cfgFlie)
     }
 }
 
+/**
+ *
+ * @param fileName
+ * @param buf
+ * @return
+ */
 int LoadCfgFile (const char *fileName, char *buf)
 {
   if (*fileName == '\0')
@@ -87,6 +93,12 @@ int LoadCfgFile (const char *fileName, char *buf)
   return true;
 }
 
+/**
+ *
+ * @param filename
+ * @param buf
+ * @return
+ */
 int LoadCfgFile (const char *filename, char *&buf)
 {
   if (*filename == '\0')
@@ -109,6 +121,13 @@ int LoadCfgFile (const char *filename, char *&buf)
   return 0;
 }
 
+/**
+ *
+ * @param filename
+ * @param balance_srv
+ * @param logical_srv
+ * @return
+ */
 int ParseCfgFile (char *filename, vector<host> &balance_srv, vector<host> &logical_srv)
 {
   TiXmlDocument doc;
@@ -133,15 +152,15 @@ int ParseCfgFile (char *filename, vector<host> &balance_srv, vector<host> &logic
       //cout << hostElement->Value () << " : " << hostElement->GetText () << endl;
       if (strcmp (hostElement->Value (), "ip") == 0)
         {
-          strcpy (tmp.m_hostname, hostElement->GetText ());
+          strcpy (tmp.mHostName, hostElement->GetText ());
         }
       else if (strcmp (hostElement->Value (), "port") == 0)
         {
-          tmp.m_port = atoi (hostElement->GetText ());
+          tmp.mPort = atoi (hostElement->GetText ());
         }
       else if (strcmp (hostElement->Value (), "connect") == 0)
         {
-          tmp.m_connect = atoi (hostElement->GetText ());
+          tmp.mConnect = atoi (hostElement->GetText ());
         }
     }
 
@@ -157,19 +176,59 @@ int ParseCfgFile (char *filename, vector<host> &balance_srv, vector<host> &logic
           //cout << hostElement->Value () << " : " << hostElement->GetText () << endl;
           if (strcmp (hostElement->Value (), "ip") == 0)
             {
-              strcpy (tmp.m_hostname, hostElement->GetText ());
+              strcpy (tmp.mHostName, hostElement->GetText ());
             }
           else if (strcmp (hostElement->Value (), "port") == 0)
             {
-              tmp.m_port = atoi (hostElement->GetText ());
+              tmp.mPort = atoi (hostElement->GetText ());
             }
           else if (strcmp (hostElement->Value (), "connect") == 0)
             {
-              tmp.m_connect = atoi (hostElement->GetText ());
+              tmp.mConnect = atoi (hostElement->GetText ());
             }
 
         }
       logical_srv.push_back (tmp);
     }
   return 0;
+}
+
+/**
+ *
+ * @param ip
+ * @param port
+ * @return
+ */
+int TcpServer (const char *ip, short port)
+{
+  int listenFd;
+  if ((listenFd = socket (AF_INET, SOCK_STREAM, 0)) == -1)
+    {
+      ERR_EXIT ("TcpServer: socket");
+    }
+
+  struct sockaddr_in address;
+  address.sin_family = AF_INET;
+  address.sin_port = htonl (port);
+  address.sin_addr.s_addr = inet_addr (ip);
+
+  int on = 1;
+  if ((setsockopt (listenFd, SOL_SOCKET, SO_REUSEADDR, (const void *) &on, sizeof (on))) == -1)
+    {
+      ERR_EXIT ("TcpServer: setsockopt");
+    }
+
+  socklen_t addrLen = sizeof (address);
+
+  if ((bind (listenFd, (struct sockaddr *) &address, addrLen)) == -1)
+    {
+      ERR_EXIT ("TcpServer: bind");
+    }
+
+  if ((listen (listenFd, 5)) == -1)
+    {
+      ERR_EXIT ("TcpServer: listen");
+    }
+
+  return listenFd;
 }

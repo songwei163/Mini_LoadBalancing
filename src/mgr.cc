@@ -3,3 +3,5 @@
 //
 
 #include "mgr.h"
+
+int mgr::mEpollFd = -1;

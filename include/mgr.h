@@ -6,12 +6,24 @@
 #define _MGR_H_
 
 #include "common.h"
+#include "conn.h"
 
 class host {
  public:
-  char m_hostname[HOST_NAME_SIZE];
-  int m_port;
-  int m_connect;
+  char mHostName[HOST_NAME_SIZE];
+  int mPort;
+  int mConnect;
+};
+
+class mgr {
+ public:
+  mgr( );
+  ~mgr();
+ private:
+  static int mEpollFd;
+  map<int, conn *> mCons;
+  map<int, conn *> mUsed;
+  map<int, conn *> mFreed;
 };
 
 #endif //_MGR_H_
