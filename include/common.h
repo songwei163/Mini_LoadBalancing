@@ -21,6 +21,10 @@ using namespace std;
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/epoll.h>
+//#include <bits/sigaction.h>
+#include <csignal>
+#include <wait.h>
+
 
 #include <fcntl.h>
 #include <libgen.h>

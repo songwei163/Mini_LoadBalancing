@@ -18,13 +18,16 @@ class host {
 
 class mgr {
  public:
-  mgr( );
-  ~mgr();
+  mgr (int epollFd, const host &srv);
+  ~mgr ();
+ public:
+  int conn2srv (const struct sockaddr_in &address);
  private:
   static int mEpollFd;
   map<int, conn *> mCons;
   map<int, conn *> mUsed;
   map<int, conn *> mFreed;
+  host m_logic_srv;
 };
 
 #endif //_MGR_H_

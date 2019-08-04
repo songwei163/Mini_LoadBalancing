@@ -6,6 +6,7 @@
 #include "clog.h"
 #include "conn.h"
 #include "processpool.h"
+#include "fdwrapper.h"
 
 int main (int argc, char *argv[])
 {
