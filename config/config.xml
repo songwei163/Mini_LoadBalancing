@@ -9,12 +9,12 @@
     <Logical name="Logic server" >
         <Logical_Host count="1">
             <ip>127.0.0.1</ip>
-            <port>12345</port>
+            <port>1234</port>
             <conns>5</conns>
         </Logical_Host>
         <Logical_host count="2">
             <ip>127.0.0.1</ip>
-            <port>12346</port>
+            <port>1235</port>
             <conns>5</conns>
         </Logical_host>
     </Logical>

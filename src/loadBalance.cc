@@ -16,7 +16,7 @@ int main (int argc, char *argv[])
       exit (EXIT_FAILURE);
     }
 
-  //log_init (LL_DEBUG, "loadBalanceLog", "./log");
+  log_init (LL_DEBUG, "loadBalanceLog", "./log");
 
   if (argc <= 1)
     {

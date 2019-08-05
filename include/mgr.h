@@ -22,6 +22,11 @@ class mgr {
   ~mgr ();
  public:
   int conn2srv (const struct sockaddr_in &address);
+  conn* pickConn(int connFd);
+  void freeConn( conn* connection );
+  int getUsedConnCnt();
+  void recycleConns();
+  RET_CODE process( int fd, OP_TYPE type );
  private:
   static int mEpollFd;
   map<int, conn *> mCons;

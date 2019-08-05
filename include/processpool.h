@@ -34,20 +34,16 @@ class processPool {
     delete[]mSubProcess;
   }
   void run (const vector<H> &arg);
-  void runChild (const vector<H> &arg);
-  void runParent ();
-
- public:
-  static processPool<C, H, M> *create (int listenFd, int ProcessNum = 8)
-  {
-    if (mInstance == nullptr)
-      {
-        mInstance = new processPool<C, H, M> (listenFd, ProcessNum);
-      }
-    return mInstance;
-  }
  private:
   void set_sig_pipe ();
+  void notifyParentBusyRatio (int pipeFd, M *manager);
+  void runChild (const vector<H> &arg);
+  void runParent ();
+  int getMostFreeSrv ();
+
+ public:
+  static processPool<C, H, M> *create (int listenFd, int ProcessNum = 8);
+
  private:
   processPool (int listenFd, int ProcessNum = 8);
  private:
@@ -95,6 +91,31 @@ processPool<C, H, M>::processPool (int listenFd, int ProcessNum) :
         }
     }
 }
+template<typename C, typename H, typename M>
+processPool<C, H, M> *processPool<C, H, M>::create (int listenFd, int ProcessNum)
+{
+  if (mInstance == nullptr)
+    {
+      mInstance = new processPool<C, H, M> (listenFd, ProcessNum);
+    }
+  return mInstance;
+}
+
+template<typename C, typename H, typename M>
+int processPool<C, H, M>::getMostFreeSrv ()
+{
+  int ratio = mSubProcess[0].mBusyRatio;
+  int idx = 0;
+  for (int i = 0; i < mProcessNum; ++i)
+    {
+      if (mSubProcess[i].mBusyRatio < ratio)
+        {
+          idx = i;
+          ratio = mSubProcess[i].mBusyRatio;
+        }
+    }
+  return idx;
+}
 
 template<typename C, typename H, typename M>
 void processPool<C, H, M>::run (const vector<H> &arg)
@@ -110,6 +131,7 @@ void processPool<C, H, M>::run (const vector<H> &arg)
 template<typename C, typename H, typename M>
 void processPool<C, H, M>::runChild (const vector<H> &arg)
 {
+  cout << "\nchild process: OK\n" << endl;
   //向epoll注册信号监听和创建管道
   set_sig_pipe ();
 
@@ -155,18 +177,30 @@ void processPool<C, H, M>::runChild (const vector<H> &arg)
 
               else
                 {
+                  //客户连接处理
                   struct sockaddr_in clientAddress;
                   socklen_t clientAddrLen = sizeof (clientAddress);
                   int connfd = accept (mListenFd, (
                       struct sockaddr *) &clientAddress, &clientAddrLen);
                   if (connfd < 0)
                     {
-                      LOG_ERROR ("errno: %s", strerror (errno));
+                      //LOG_ERROR ("errno: %s", strerror (errno));
+                      printf ("accept failure, errno: %s\n", strerror (errno));
                       continue;
                     }
 
                   add_read_fd (mEpollFd, connfd);
-                  //
+
+                  //更新管理类
+                  C *conn = manager->pickConn (connfd);
+                  if (conn == nullptr)
+                    {
+                      closefd (mEpollFd, connfd);
+                      continue;
+                    }
+//
+                  conn->initClt (connfd, clientAddress);
+                  notifyParentBusyRatio (pipeFdRead, manager);
                 }
             }
 
@@ -214,13 +248,40 @@ void processPool<C, H, M>::runChild (const vector<H> &arg)
             //数据处理
           else if (revents[i].events & EPOLLIN)
             {
+              RET_CODE result = manager->process (sockfd, READ);
 
+              switch (result)
+                {
+                  case CLOSED:
+                    {
+                      notifyParentBusyRatio (pipeFdRead, manager);
+                      break;
+                    }
+
+                  default:
+                    {
+                      break;
+                    }
+                }
             }
 
             //数据处理
           else if (revents[i].events & EPOLLOUT)
             {
+              RET_CODE result = manager->process (sockfd, WRITE);
+              switch (result)
+                {
+                  case CLOSED:
+                    {
+                      notifyParentBusyRatio (pipeFdRead, manager);
+                      break;
+                    }
 
+                  default:
+                    {
+                      break;
+                    }
+                }
             }
           else
             {
@@ -237,7 +298,7 @@ void processPool<C, H, M>::runChild (const vector<H> &arg)
 template<typename C, typename H, typename M>
 void processPool<C, H, M>::runParent ()
 {
-  cout << "parent process: OK" << endl;
+  cout << "\nparent process: OK\n" << endl;
 
   //向epoll注册信号监听和创建管道
   set_sig_pipe ();
@@ -254,6 +315,7 @@ void processPool<C, H, M>::runParent ()
   //统一事件源 处理各种连接
   struct epoll_event revents[MAX_EVENT_NUMBER];
   int number = 0;
+  int new_conn = 1;
 
   while (!mStop)
     {
@@ -276,7 +338,10 @@ void processPool<C, H, M>::runParent ()
           int sockfd = revents[i].data.fd;
           if (sockfd == mListenFd)
             {
-              //挑选逻辑服务器
+              //挑选出最空闲的子进程
+              int idx = getMostFreeSrv ();
+              send (mSubProcess[idx].mPipeFd[0], (char *) &new_conn, sizeof (new_conn), 0);
+              LOG_ERROR ("send request to child %d", idx);
             }
 
             //信号处理
@@ -325,7 +390,8 @@ void processPool<C, H, M>::runParent ()
                           case SIGTERM:
                           case SIGINT:
                             {
-                              LOG_NOTICE ("%s", "kill all the clild now");
+                              LOG_NOTICE ("%s", "kill all the child now");
+                              //mStop = true;
                               for (int i = 0; i < mProcessNum; ++i)
                                 {
                                   int pid = mSubProcess[i].mPid;
@@ -394,6 +460,13 @@ void processPool<C, H, M>::set_sig_pipe ()
   addSig (SIGTERM, sigHandler);
   addSig (SIGINT, sigHandler);
   addSig (SIGPIPE, SIG_IGN);
+}
+
+template<typename C, typename H, typename M>
+void processPool<C, H, M>::notifyParentBusyRatio (int pipeFd, M *manager)
+{
+  int msg = manager->getUsedConnCnt ();
+  send (pipeFd, (char *) &msg, 1, 0);
 }
 
 static void sigHandler (int sig)

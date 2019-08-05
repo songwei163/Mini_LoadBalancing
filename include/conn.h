@@ -10,10 +10,17 @@
 
 class conn {
  public:
-  conn();
+  void initClt (int sockfd, const sockaddr_in &client_addr);
+  void initSrv (int sockfd, const sockaddr_in &server_addr);
+  RET_CODE readCli();
+  RET_CODE writeCli();
+  RET_CODE readSer();
+  RET_CODE writeSer();
+ public:
+  conn ();
   ~conn ();
  public:
-  void reset();
+  void reset ();
  public:
   static const int BUF_SIZE = 2048;
 

@@ -174,7 +174,7 @@ int TcpServer (const char *ip, short port)
   struct sockaddr_in address;
   address.sin_family = AF_INET;
   address.sin_port = htonl (port);
-  address.sin_addr.s_addr = inet_addr (ip);
+  inet_pton (AF_INET, ip, &address.sin_addr);
 
   int on = 1;
   if ((setsockopt (listenFd, SOL_SOCKET, SO_REUSEADDR, (const void *) &on, sizeof (on))) == -1)
